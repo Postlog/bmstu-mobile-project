@@ -23,9 +23,8 @@ type Repository struct {
 }
 
 func New(folderPath string) (*Repository, error) {
-	folderPath, err := filepath.Abs(folderPath)
-	if err != nil {
-		return nil, fmt.Errorf("error converting path to absoulte: %w", err)
+	if !filepath.IsAbs(folderPath) {
+		return nil, fmt.Errorf("provided path must be absolute")
 	}
 
 	return &Repository{

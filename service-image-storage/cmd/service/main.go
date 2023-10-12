@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/postlog/mobile-project/service-image-storage/internal/config"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,12 +14,6 @@ import (
 	infoHandler "github.com/postlog/mobile-project/service-image-storage/internal/handlers/info"
 	saveImageHandler "github.com/postlog/mobile-project/service-image-storage/internal/handlers/save"
 	imageRepository "github.com/postlog/mobile-project/service-image-storage/internal/repository/image"
-)
-
-const (
-	imageRepositoryFolderPath = "./images"
-
-	serverPort = 8081
 )
 
 func main() {
@@ -40,7 +35,20 @@ func run() (exitCode int) {
 		}
 	}()
 
-	imageRepo, err := imageRepository.New(imageRepositoryFolderPath)
+	c, err := config.Load()
+	if err != nil {
+		logger.ErrorContext(ctx, "error loading config", "error", err)
+		return 1
+	}
+
+	if err = os.MkdirAll(c.StorageConfig.FolderPath, os.ModePerm); err != nil {
+		logger.ErrorContext(ctx, "error creating folder", "error", err, "folderPath", c.StorageConfig.FolderPath)
+		return 1
+	}
+
+	logger.InfoContext(ctx, "initialized images directory", "directory", c.StorageConfig.FolderPath)
+
+	imageRepo, err := imageRepository.New(c.StorageConfig.FolderPath)
 	if err != nil {
 		logger.ErrorContext(ctx, "error initializing image repository", "error", err)
 		return 1
@@ -56,7 +64,7 @@ func run() (exitCode int) {
 	mux.Handle("/info", infoHandlerInstance)
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", serverPort),
+		Addr:    fmt.Sprintf(":%d", c.ServerConfig.Port),
 		Handler: mux,
 	}
 
@@ -72,7 +80,7 @@ func run() (exitCode int) {
 		}
 	}()
 
-	logger.Info(fmt.Sprintf("server starting on port %d", serverPort))
+	logger.Info(fmt.Sprintf("server starting on port %d", c.ServerConfig.Port))
 	if err = server.ListenAndServe(); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("server stopped with error", "error", err)
