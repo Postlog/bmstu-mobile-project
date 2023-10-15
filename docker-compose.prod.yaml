@@ -14,6 +14,12 @@ services:
     networks:
       - global
     restart: unless-stopped
+    healthcheck:
+      test: curl http://127.0.0.1:8080/info
+      interval: 5s
+      retries: 2
+      start_period: 10s
+      timeout: 2s
 
   service-api-composition:
     container_name: service-api-composition
@@ -31,10 +37,19 @@ services:
       - global
       - service-api-composition-internal
     restart: unless-stopped
+    healthcheck:
+      test: curl http://127.0.0.1:8080/info
+      interval: 5s
+      retries: 2
+      start_period: 10s
+      timeout: 2s
 
   api-composition-postgres:
     container_name: api-composition-postgres
     image: postgres:16
+    depends_on:
+      api-composition-postgres:
+        condition: service_healthy
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -44,6 +59,12 @@ services:
     networks:
       - service-api-composition-internal
     restart: unless-stopped
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 5s
+      retries: 4
+      start_period: 20s
+      timeout: 5s
 
 networks:
   global: 
