@@ -2,9 +2,8 @@ package config
 
 import (
 	"fmt"
-	"path/filepath"
-
 	"github.com/caarlos0/env/v9"
+	"time"
 )
 
 type Env string
@@ -17,16 +16,17 @@ var (
 type Config struct {
 	Env Env `env:"APP_ENV,required"`
 
-	ServerConfig  ServerConfig
-	StorageConfig StorageConfig
+	ServerConfig       ServerConfig
+	DependenciesConfig DependenciesConfig
 }
 
 type ServerConfig struct {
 	Port int `env:"SERVER_PORT,required"`
 }
 
-type StorageConfig struct {
-	FolderPath string `env:"IMAGES_FOLDER_PATH"`
+type DependenciesConfig struct {
+	ServiceImageStorageURL     string        `env:"SERVICE_IMAGE_STORAGE_URL,required"`
+	ServiceImageStorageTimeout time.Duration `env:"SERVICE_IMAGE_STORAGE_TIMEOUT,required"`
 }
 
 func Load() (Config, error) {
@@ -34,11 +34,6 @@ func Load() (Config, error) {
 	err := env.Parse(&c)
 	if err != nil {
 		return Config{}, fmt.Errorf("parse env variables to config: %w", err)
-	}
-
-	c.StorageConfig.FolderPath, err = filepath.Abs(c.StorageConfig.FolderPath)
-	if err != nil {
-		return Config{}, fmt.Errorf("convert folder path to absoulte: %w", err)
 	}
 
 	return c, nil

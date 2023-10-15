@@ -51,6 +51,20 @@ func (r Repository) Count(_ context.Context) (int, error) {
 }
 
 func (r Repository) Save(_ context.Context, pngImageBytes []byte) (uuid.UUID, error) {
+	config, err := png.DecodeConfig(bytes.NewReader(pngImageBytes))
+	if err != nil {
+		var formatErr png.FormatError
+		if errors.Is(err, io.ErrUnexpectedEOF) || errors.As(err, &formatErr) {
+			return uuid.Nil, ErrImageNotInPNGFormat
+		}
+
+		return uuid.Nil, fmt.Errorf("read image header: %w", err)
+	}
+
+	if config.Width*config.Height > 8294400 {
+		return uuid.Nil, ErrImageTooLarge
+	}
+
 	nameUUID := uuid.New()
 	fileName := fmt.Sprintf("%s.%s", nameUUID.String(), extensionPNG)
 	filePath := filepath.Join(r.folderPath, fileName)
@@ -58,20 +72,6 @@ func (r Repository) Save(_ context.Context, pngImageBytes []byte) (uuid.UUID, er
 	file, err := os.Create(filePath)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("create file \"%s\": %w", filePath, err)
-	}
-
-	config, err := png.DecodeConfig(bytes.NewReader(pngImageBytes))
-	if err != nil {
-		var formatErr png.FormatError
-		if errors.As(err, &formatErr) {
-			return uuid.Nil, ErrImageNotInPNGFormat
-		}
-
-		return uuid.Nil, fmt.Errorf("read image header: %w", err)
-	}
-
-	if config.Width > MaxImageWidthPX || config.Height > MaxImageHeightPX {
-		return uuid.Nil, ErrImageTooLarge
 	}
 
 	bytesWrote, err := file.Write(pngImageBytes)

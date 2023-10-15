@@ -1,6 +1,16 @@
 package handlers
 
+import "net/http"
+
 const (
-	ContentTypeImagePNG = "image/png"
-	ContentTypeJSON     = "application/json"
+	ContentTypeJSON = "application/json"
+)
+
+const (
+	ErrorCodeBadRequest          = http.StatusBadRequest
+	ErrorCodeImageTooLarge       = 601
+	ErrorCodeImageNotInPNGFormat = 602
+
+	ErrorCodeImageNotFound = http.StatusNotFound
+	ErrorCodeInternal      = http.StatusInternalServerError
 )

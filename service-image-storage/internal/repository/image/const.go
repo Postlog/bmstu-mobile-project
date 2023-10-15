@@ -1,6 +1,5 @@
 package image
 
 const (
-	MaxImageWidthPX  = 4096
-	MaxImageHeightPX = 4096
+	MaxImagePixelsCount = 8294400 // 4k image
 )

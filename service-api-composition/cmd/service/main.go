@@ -4,16 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/postlog/mobile-project/service-image-storage/internal/config"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 
-	getImageHandler "github.com/postlog/mobile-project/service-image-storage/internal/handlers/get"
-	infoHandler "github.com/postlog/mobile-project/service-image-storage/internal/handlers/info"
-	saveImageHandler "github.com/postlog/mobile-project/service-image-storage/internal/handlers/save"
-	imageRepository "github.com/postlog/mobile-project/service-image-storage/internal/repository/image"
+	imageStorageClient "github.com/postlog/mobile-project/service-api-composition/internal/clients/image_storage"
+	"github.com/postlog/mobile-project/service-api-composition/internal/config"
+	getImageHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/get"
+	saveImageHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/save"
 )
 
 func main() {
@@ -43,27 +42,23 @@ func run() (exitCode int) {
 
 	logger.InfoContext(ctx, "app config", "config", cfg)
 
-	if err = os.MkdirAll(cfg.StorageConfig.FolderPath, os.ModePerm); err != nil {
-		logger.ErrorContext(ctx, "error creating folder", "error", err, "folderPath", cfg.StorageConfig.FolderPath)
-		return 1
+	dependenciesHTTPClient := http.Client{
+		Transport: nil,
+		Timeout:   cfg.DependenciesConfig.ServiceImageStorageTimeout,
 	}
 
-	logger.InfoContext(ctx, "initialized images directory", "directory", cfg.StorageConfig.FolderPath)
-
-	imageRepo, err := imageRepository.New(cfg.StorageConfig.FolderPath)
+	imageStorageClientInstance := imageStorageClient.New(cfg.DependenciesConfig.ServiceImageStorageURL, dependenciesHTTPClient)
 	if err != nil {
-		logger.ErrorContext(ctx, "error initializing image repository", "error", err)
+		logger.ErrorContext(ctx, "error initializing image-storage client", "error", err)
 		return 1
 	}
 
-	saveImageHandlerInstance := saveImageHandler.New(logger, imageRepo)
-	infoHandlerInstance := infoHandler.New(logger, imageRepo)
-	getImageHandlerInstance := getImageHandler.New(logger, imageRepo)
+	saveImageHandlerInstance := saveImageHandler.New(logger, imageStorageClientInstance)
+	getImageHandlerInstance := getImageHandler.New(logger, imageStorageClientInstance)
 
 	mux := &http.ServeMux{}
 	mux.Handle("/save", saveImageHandlerInstance)
 	mux.Handle("/get", getImageHandlerInstance)
-	mux.Handle("/info", infoHandlerInstance)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.ServerConfig.Port),

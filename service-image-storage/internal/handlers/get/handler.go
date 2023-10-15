@@ -1,8 +1,10 @@
 package save_image
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -18,11 +20,7 @@ type Handler struct {
 }
 
 const (
-	HTTPMethod = http.MethodGet
-)
-
-const (
-	imageIDKey = "id"
+	HTTPMethod = http.MethodPost
 )
 
 func New(logger *slog.Logger, imageRepo imageRepository) *Handler {
@@ -41,34 +39,96 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageIDRaw := r.URL.Query().Get(imageIDKey)
-	imageID, err := uuid.Parse(imageIDRaw)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	w.Header().Set("Content-Type", handlers.ContentTypeJSON)
+	w.WriteHeader(http.StatusOK)
 
-		h.logger.WarnContext(r.Context(), "get_image: imageId in incorrect format", "error", err, "imageId", imageIDRaw)
+	ctx := r.Context()
+
+	var req handlers.GetRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		encodeErr := json.NewEncoder(w).Encode(handlers.GetResponse{
+			Error: &handlers.ResponseError{
+				Code:    handlers.ErrorCodeBadRequest,
+				Message: "body must be valid json",
+			},
+		})
+
+		h.logger.WarnContext(ctx, "handler /get: invalid json in request", "error", err)
+
+		if encodeErr != nil {
+			h.logger.ErrorContext(ctx, "handler /get: error encoding response", "error", encodeErr)
+		}
 
 		return
 	}
 
-	image, err := h.imageRepo.Get(r.Context(), imageID)
+	imageIDRaw := req.ImageID
+	imageID, err := uuid.Parse(imageIDRaw)
+	if err != nil {
+		encodeErr := json.NewEncoder(w).Encode(handlers.GetResponse{
+			Error: &handlers.ResponseError{
+				Code:    handlers.ErrorCodeBadRequest,
+				Message: "image id must be valid UUID",
+			},
+		})
+
+		h.logger.WarnContext(ctx, "handler /get: invalid imageId format in request", "imageId", imageIDRaw, "error", err)
+
+		if encodeErr != nil {
+			h.logger.ErrorContext(ctx, "handler /get: error encoding response", "error", encodeErr)
+		}
+
+		return
+	}
+
+	image, err := h.imageRepo.Get(ctx, imageID)
 	if err != nil {
 		if errors.Is(err, imageRepo.ErrImageNotExist) {
-			w.WriteHeader(http.StatusNotFound)
+			encodeErr := json.NewEncoder(w).Encode(handlers.GetResponse{
+				Error: &handlers.ResponseError{
+					Code:    handlers.ErrorCodeImageNotFound,
+					Message: fmt.Sprintf("image with id '%s' not found", imageID.String()),
+				},
+			})
 
-			h.logger.WarnContext(r.Context(), "get_image: image not exist", "imageId", imageIDRaw)
+			h.logger.WarnContext(ctx, "handler /get: image with specified id not found", "imageId", imageID.String())
+
+			if encodeErr != nil {
+				h.logger.ErrorContext(ctx, "handler /get: error encoding response", "error", encodeErr)
+			}
 
 			return
 		}
 
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{})
+		encodeErr := json.NewEncoder(w).Encode(handlers.GetResponse{
+			Error: &handlers.ResponseError{
+				Code:    handlers.ErrorCodeInternal,
+				Message: "unexpected internal error",
+			},
+		})
 
-		h.logger.WarnContext(r.Context(), "get_image: unexpected repository error", "error", err, "imageId", imageIDRaw)
+		h.logger.ErrorContext(
+			ctx,
+			"handler /get: unexpected error from image repository",
+			"imageId", imageID.String(),
+			"error", err,
+		)
+
+		if encodeErr != nil {
+			h.logger.ErrorContext(ctx, "handler /get: error encoding response", "error", encodeErr)
+		}
 
 		return
 	}
 
-	w.Header().Set("Content-Type", handlers.ContentTypeImagePNG)
-	_, _ = w.Write(image.Bytes)
+	encodedImage := base64.StdEncoding.EncodeToString(image.Bytes)
+
+	err = json.NewEncoder(w).Encode(handlers.GetResponse{
+		EncodedImage: &encodedImage,
+	})
+
+	if err != nil {
+		h.logger.ErrorContext(ctx, "handler /get: error encoding response", "error", err)
+	}
 }

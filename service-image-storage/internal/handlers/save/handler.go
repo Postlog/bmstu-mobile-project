@@ -1,11 +1,13 @@
 package save
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/postlog/mobile-project/service-image-storage/internal/handlers"
 	imageRepo "github.com/postlog/mobile-project/service-image-storage/internal/repository/image"
@@ -17,19 +19,7 @@ type Handler struct {
 }
 
 const (
-	HTTPMethod = http.MethodGet
-)
-
-const (
-	wrongContentTypeMessage    = "unexpected content type"
-	wrongBodyMessage           = "wrong body"
-	imageTooLargeMessage       = "image too large"
-	imageNotInPNGFormatMessage = "image not in png format"
-
-	wrongContentTypeCode    = 1000
-	wrongBodyCode           = 1001
-	imageTooLargeCode       = 1002
-	imageNotInPNGFormatCode = 1003
+	HTTPMethod = http.MethodPost
 )
 
 func New(logger *slog.Logger, imageRepo imageRepository) *Handler {
@@ -42,84 +32,116 @@ func New(logger *slog.Logger, imageRepo imageRepository) *Handler {
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = r.Body.Close() }()
 
-	w.Header().Set("Content-Type", handlers.ContentTypeJSON)
-
 	if r.Method != HTTPMethod {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 
 		return
 	}
 
-	contentType := r.Header.Get("Content-Type")
-	if contentType != handlers.ContentTypeImagePNG {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(Response{
-			Error: &ResponseError{
-				Code:    wrongContentTypeCode,
-				Message: wrongContentTypeMessage,
-			},
-		})
+	w.Header().Set("Content-Type", handlers.ContentTypeJSON)
+	w.WriteHeader(http.StatusOK)
 
-		h.logger.WarnContext(r.Context(), "save_image: request with wrong content type", "contentType", contentType)
+	ctx := r.Context()
 
-		return
-	}
-
-	bytes, err := io.ReadAll(r.Body)
+	var req handlers.SaveRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(Response{
-			Error: &ResponseError{
-				Code:    wrongBodyCode,
-				Message: wrongBodyMessage,
+		encodeErr := json.NewEncoder(w).Encode(handlers.SaveResponse{
+			Error: &handlers.ResponseError{
+				Code:    handlers.ErrorCodeBadRequest,
+				Message: "body must be valid json",
 			},
 		})
 
-		h.logger.ErrorContext(r.Context(), "save_image: error reading body", "error", err)
+		h.logger.WarnContext(ctx, "handler /save: invalid json in request", "error", err)
+
+		if encodeErr != nil {
+			h.logger.ErrorContext(ctx, "handler /save: error encoding response", "error", encodeErr)
+		}
 
 		return
 	}
 
-	imageID, err := h.imageRepo.Save(r.Context(), bytes)
+	imageBytes, err := io.ReadAll(base64.NewDecoder(base64.StdEncoding, strings.NewReader(req.EncodedImage)))
+	if err != nil {
+		encodeErr := json.NewEncoder(w).Encode(handlers.SaveResponse{
+			Error: &handlers.ResponseError{
+				Code:    handlers.ErrorCodeBadRequest,
+				Message: "encoded image must be valid base64",
+			},
+		})
+
+		h.logger.WarnContext(ctx, "handler /save: base64 in request", "error", err)
+
+		if encodeErr != nil {
+			h.logger.ErrorContext(ctx, "handler /save: error encoding response", "error", encodeErr)
+		}
+
+		return
+	}
+
+	imageID, err := h.imageRepo.Save(ctx, imageBytes)
 	if err != nil {
 		if errors.Is(err, imageRepo.ErrImageTooLarge) {
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(Response{
-				Error: &ResponseError{
-					Code:    imageTooLargeCode,
-					Message: imageTooLargeMessage,
+			encodeErr := json.NewEncoder(w).Encode(handlers.SaveResponse{
+				Error: &handlers.ResponseError{
+					Code:    handlers.ErrorCodeImageTooLarge,
+					Message: "provided image is too large",
 				},
 			})
 
-			h.logger.WarnContext(r.Context(), "save_image: passed image is too large")
+			h.logger.WarnContext(ctx, "handler /save: provided image is too large")
+
+			if encodeErr != nil {
+				h.logger.ErrorContext(ctx, "handler /save: error encoding response", "error", encodeErr)
+			}
 
 			return
 		}
+
 		if errors.Is(err, imageRepo.ErrImageNotInPNGFormat) {
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(Response{
-				Error: &ResponseError{
-					Code:    imageNotInPNGFormatCode,
-					Message: imageNotInPNGFormatMessage,
+			encodeErr := json.NewEncoder(w).Encode(handlers.SaveResponse{
+				Error: &handlers.ResponseError{
+					Code:    handlers.ErrorCodeImageNotInPNGFormat,
+					Message: "provided image is not in PNG format",
 				},
 			})
 
-			h.logger.WarnContext(r.Context(), "save_image: passed image not in png format")
+			h.logger.WarnContext(ctx, "handler /save: provided image is not in PNG format")
+
+			if encodeErr != nil {
+				h.logger.ErrorContext(ctx, "handler /save: error encoding response", "error", encodeErr)
+			}
 
 			return
 		}
 
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{})
+		encodeErr := json.NewEncoder(w).Encode(handlers.SaveResponse{
+			Error: &handlers.ResponseError{
+				Code:    handlers.ErrorCodeInternal,
+				Message: "unexpected internal error",
+			},
+		})
 
-		h.logger.WarnContext(r.Context(), "save_image: unexpected repository error", "error", err)
+		h.logger.ErrorContext(
+			ctx,
+			"handler /save: unexpected error from image repository",
+			"error", err,
+		)
+
+		if encodeErr != nil {
+			h.logger.ErrorContext(ctx, "handler /save: error encoding response", "error", encodeErr)
+		}
 
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	imageIDStr := imageID.String()
-	_ = json.NewEncoder(w).Encode(Response{
+	err = json.NewEncoder(w).Encode(handlers.SaveResponse{
 		ImageID: &imageIDStr,
 	})
+
+	if err != nil {
+		h.logger.ErrorContext(ctx, "handler /save: error encoding response", "error", err)
+	}
 }
