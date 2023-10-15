@@ -8,7 +8,9 @@ services:
     environment:
       - SERVER_PORT=8080
       - IMAGES_FOLDER_PATH=./images
-      - APP_ENV=prod
+      - APP_ENV=local
+    ports:
+      - "8081:8080"
     volumes:
       - image-storage-volume:/images
     networks:
@@ -21,15 +23,14 @@ services:
       context: ./service-api-composition
       dockerfile: Dockerfile
     ports:
-      - 80:8080
+      - "80:8080"
     environment:
       - SERVER_PORT=8080
       - SERVICE_IMAGE_STORAGE_URL=http://service-image-storage:8080
       - SERVICE_IMAGE_STORAGE_TIMEOUT=1s
-      - APP_ENV=prod
+      - APP_ENV=local
     networks:
       - global
-      - service-api-composition-internal
     restart: unless-stopped
 
   api-composition-postgres:
@@ -41,18 +42,15 @@ services:
       - POSTGRES_DB=api-composition
     volumes:
       - api-composition-postgres-volume:/var/lib/postgresql
+    ports:
+      - "2345:5432"
     networks:
-      - service-api-composition-internal
+      - global
     restart: unless-stopped
 
 networks:
   global: 
-  service-api-composition-internal:
-    internal: true
 
 volumes:
   image-storage-volume:
   api-composition-postgres-volume:
-
-
-

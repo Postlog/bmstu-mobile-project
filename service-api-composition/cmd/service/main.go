@@ -12,6 +12,7 @@ import (
 	imageStorageClient "github.com/postlog/mobile-project/service-api-composition/internal/clients/image_storage"
 	"github.com/postlog/mobile-project/service-api-composition/internal/config"
 	getImageHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/get"
+	infoHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/info"
 	saveImageHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/save"
 )
 
@@ -55,9 +56,11 @@ func run() (exitCode int) {
 
 	saveImageHandlerInstance := saveImageHandler.New(logger, imageStorageClientInstance)
 	getImageHandlerInstance := getImageHandler.New(logger, imageStorageClientInstance)
+	infoHandlerImage := infoHandler.New(logger)
 
 	mux := &http.ServeMux{}
 	mux.Handle("/save", saveImageHandlerInstance)
+	mux.Handle("/info", infoHandlerImage)
 	mux.Handle("/get", getImageHandlerInstance)
 
 	server := &http.Server{

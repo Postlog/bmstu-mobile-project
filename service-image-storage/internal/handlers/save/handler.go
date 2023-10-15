@@ -140,7 +140,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(handlers.SaveResponse{
 		ImageID: &imageIDStr,
 	})
-
 	if err != nil {
 		h.logger.ErrorContext(ctx, "handler /save: error encoding response", "error", err)
 	}
