@@ -8,5 +8,4 @@ const (
 	errorCodeImageNotInPNGFormat = 602
 
 	errorCodeImageNotFound = http.StatusNotFound
-	errorCodeInternal      = http.StatusInternalServerError
 )

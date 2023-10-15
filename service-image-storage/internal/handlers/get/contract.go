@@ -2,9 +2,10 @@ package save_image
 
 import (
 	"context"
-	imageRepo "github.com/postlog/mobile-project/service-image-storage/internal/repository/image"
 
 	"github.com/google/uuid"
+
+	imageRepo "github.com/postlog/mobile-project/service-image-storage/internal/repository/image"
 )
 
 type imageRepository interface {

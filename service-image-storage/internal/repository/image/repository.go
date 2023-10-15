@@ -61,7 +61,7 @@ func (r Repository) Save(_ context.Context, pngImageBytes []byte) (uuid.UUID, er
 		return uuid.Nil, fmt.Errorf("read image header: %w", err)
 	}
 
-	if config.Width*config.Height > 8294400 {
+	if config.Width*config.Height > MaxImagePixelsCount {
 		return uuid.Nil, ErrImageTooLarge
 	}
 

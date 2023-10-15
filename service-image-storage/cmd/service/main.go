@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/postlog/mobile-project/service-image-storage/internal/config"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 
+	"github.com/postlog/mobile-project/service-image-storage/internal/config"
 	getImageHandler "github.com/postlog/mobile-project/service-image-storage/internal/handlers/get"
 	infoHandler "github.com/postlog/mobile-project/service-image-storage/internal/handlers/info"
 	saveImageHandler "github.com/postlog/mobile-project/service-image-storage/internal/handlers/save"
