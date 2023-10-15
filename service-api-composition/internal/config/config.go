@@ -28,6 +28,8 @@ type ServerConfig struct {
 type DependenciesConfig struct {
 	ServiceImageStorageURL     string        `env:"SERVICE_IMAGE_STORAGE_URL,required"`
 	ServiceImageStorageTimeout time.Duration `env:"SERVICE_IMAGE_STORAGE_TIMEOUT,required"`
+
+	RabbitMQDSN string `env:"RABBITMQ_DSN,required"`
 }
 
 func Load() (Config, error) {

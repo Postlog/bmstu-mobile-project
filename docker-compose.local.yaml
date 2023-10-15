@@ -28,6 +28,8 @@ services:
     depends_on:
       api-composition-postgres:
         condition: service_healthy
+      rabbit-mq:
+        condition: service_healthy
     build: 
       context: ./service-api-composition
       dockerfile: Dockerfile
@@ -37,6 +39,7 @@ services:
       - SERVER_PORT=8080
       - SERVICE_IMAGE_STORAGE_URL=http://service-image-storage:8080
       - SERVICE_IMAGE_STORAGE_TIMEOUT=1s
+      - RABBITMQ_DSN=amqp://rmuser:rmpassword@rabbit-mq:5672/
       - APP_ENV=local
     networks:
       - global
@@ -69,9 +72,36 @@ services:
       start_period: 20s
       timeout: 5s
 
+  rabbit-mq:
+    container_name: rabbit-mq
+    build:
+      context: ./rabbit-mq
+      dockerfile: Dockerfile
+    hostname: rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=rmuser
+      - RABBITMQ_DEFAULT_PASS=rmpassword
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit disk_free_limit 2147483648
+    volumes:
+      - rabbitmq-volume:/var/lib/rabbitmq
+    networks:
+      - global
+    restart: unless-stopped
+    healthcheck:
+      test: curl -f http://127.0.0.1:15672/
+      interval: 5s
+      timeout: 30s
+      start_period: 30s
+      retries: 3
+
+
 networks:
   global: 
 
 volumes:
   image-storage-volume:
   api-composition-postgres-volume:
+  rabbitmq-volume:
