@@ -17,13 +17,7 @@ type Handler struct {
 }
 
 const (
-	HTTPMethod = http.MethodPost
-)
-
-const (
 	errorMessageScaleFactorDoesntFitInRange = "Коэффициент масштабирования некорректен"
-	errorMessageBadRequest                  = "Некорректный запрос"
-	errorMessageInternalError               = "Непредвиденная ошибка, попробуйте позже"
 )
 
 func New(logger *slog.Logger, scaleTaskRepo scaleTaskRepositoryInterface) *Handler {
@@ -36,45 +30,33 @@ func New(logger *slog.Logger, scaleTaskRepo scaleTaskRepositoryInterface) *Handl
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = r.Body.Close() }()
 
-	if r.Method != HTTPMethod {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		return
-	}
-
 	w.Header().Set("Content-Type", handlers.ContentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 
 	var req handlers.CreateScaleTaskRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		encodeErr := json.NewEncoder(w).Encode(handlers.SaveResponse{
+		_ = json.NewEncoder(w).Encode(handlers.SaveResponse{
 			Error: &handlers.ResponseError{
-				Message: errorMessageBadRequest,
+				Code:    handlers.ErrorCodeBadRequest,
+				Message: handlers.ErrorMessageBodyMustBeJSON,
 			},
 		})
 
-		h.logger.WarnContext(r.Context(), "handler /createScaleTask: error decoding body", "error", err)
-
-		if encodeErr != nil {
-			h.logger.ErrorContext(r.Context(), "handler /createScaleTask: error encoding response", "error", encodeErr)
-		}
+		h.logger.WarnContext(r.Context(), "handler create_scale_task: error decoding body into JSON", "error", err)
 
 		return
 	}
 
 	if req.ScaleFactor <= 0 {
-		encodeErr := json.NewEncoder(w).Encode(handlers.SaveResponse{
+		_ = json.NewEncoder(w).Encode(handlers.SaveResponse{
 			Error: &handlers.ResponseError{
+				Code:    handlers.ErrorCodeBadRequest,
 				Message: errorMessageScaleFactorDoesntFitInRange,
 			},
 		})
 
-		h.logger.WarnContext(r.Context(), "handler /createScaleTask: invalid scaleFactor", "scaleFactor", req.ScaleFactor)
-
-		if encodeErr != nil {
-			h.logger.ErrorContext(r.Context(), "handler /createScaleTask: error encoding response", "error", encodeErr)
-		}
+		h.logger.WarnContext(r.Context(), "handler create_scale_task: invalid scaleFactor", "scaleFactor", req.ScaleFactor)
 
 		return
 	}
@@ -88,25 +70,19 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	if err != nil {
-		encodeErr := json.NewEncoder(w).Encode(handlers.SaveResponse{
+		_ = json.NewEncoder(w).Encode(handlers.SaveResponse{
 			Error: &handlers.ResponseError{
-				Message: errorMessageInternalError,
+				Code:    handlers.ErrorCodeInternalError,
+				Message: handlers.ErrorMessageInternal,
 			},
 		})
 
-		h.logger.ErrorContext(r.Context(), "handler /createScaleTask: unexpected error from scale task repository", "error", err)
-
-		if encodeErr != nil {
-			h.logger.ErrorContext(r.Context(), "handler /createScaleTask: error encoding response", "error", encodeErr)
-		}
+		h.logger.ErrorContext(r.Context(), "handler create_scale_task: unexpected error from scale task repository", "error", err)
 
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(handlers.CreateScaleTaskResponse{
+	_ = json.NewEncoder(w).Encode(handlers.CreateScaleTaskResponse{
 		TaskID: &taskID,
 	})
-	if err != nil {
-		h.logger.ErrorContext(r.Context(), "handler /createScaleTask: error encoding response", "error", err)
-	}
 }

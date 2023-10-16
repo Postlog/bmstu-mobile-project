@@ -10,3 +10,5 @@ require (
 	github.com/rabbitmq/amqp091-go v1.9.0
 	golang.org/x/sync v0.4.0
 )
+
+require github.com/gorilla/mux v1.8.0 // indirect

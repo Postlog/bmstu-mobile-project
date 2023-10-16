@@ -1,9 +1,5 @@
 package handlers
 
-type GetScaleResultRequest struct {
-	TaskID string `json:"taskId"`
-}
-
 type GetScaleResultResponse struct {
 	Result *GetScaleResultResponseResult `json:"result"`
 	Error  *ResponseError                `json:"error"`
@@ -32,6 +28,11 @@ type SaveResponse struct {
 	Error   *ResponseError `json:"error"`
 }
 
+type InfoResponse struct {
+	OS string `json:"os"`
+}
+
 type ResponseError struct {
+	Code    int    `json:"code"`
 	Message string `json:"message"`
 }

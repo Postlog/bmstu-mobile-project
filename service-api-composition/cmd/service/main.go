@@ -10,16 +10,17 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	imageStorageClient "github.com/postlog/mobile-project/service-api-composition/internal/clients/image_storage"
 	"github.com/postlog/mobile-project/service-api-composition/internal/config"
 	createScaleTaskHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/create_scale_task"
-	getImageHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/get"
+	getImageHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/get_image"
 	getScaleResultHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/get_scale_result"
 	infoHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/info"
-	saveImageHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/save"
+	saveImageHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/save_image"
 	scaleResultRepository "github.com/postlog/mobile-project/service-api-composition/internal/repository/scale_result"
 	scaleTaskRepository "github.com/postlog/mobile-project/service-api-composition/internal/repository/scale_task"
 )
@@ -83,18 +84,18 @@ func run() (exitCode int) {
 	getScaleResultHandlerInstance := getScaleResultHandler.New(logger, scaleResultRepo)
 	saveImageHandlerInstance := saveImageHandler.New(logger, imageStorageClientInstance)
 	getImageHandlerInstance := getImageHandler.New(logger, imageStorageClientInstance)
-	infoHandlerImage := infoHandler.New(logger)
+	infoHandlerInstance := infoHandler.New(logger)
 
-	mux := &http.ServeMux{}
-	mux.Handle("/save", saveImageHandlerInstance)
-	mux.Handle("/info", infoHandlerImage)
-	mux.Handle("/get", getImageHandlerInstance)
-	mux.Handle("/createScaleTask", createScaleTaskHandlerInstance)
-	mux.Handle("/getScaleResult", getScaleResultHandlerInstance)
+	router := mux.NewRouter()
+	router.Handle("/info", infoHandlerInstance).Methods(http.MethodGet)
+	router.Handle("/image/{imageId}", getImageHandlerInstance).Methods(http.MethodGet)
+	router.Handle("/image", saveImageHandlerInstance).Methods(http.MethodPost).Headers("Content-Type", "image/png")
+	router.Handle("/task/scale/{taskId}", getScaleResultHandlerInstance).Methods(http.MethodGet)
+	router.Handle("/task/scale", createScaleTaskHandlerInstance).Methods(http.MethodPost)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.ServerConfig.Port),
-		Handler: mux,
+		Handler: router,
 	}
 
 	go func() {
@@ -103,20 +104,20 @@ func run() (exitCode int) {
 
 		select {
 		case <-signalCh:
-			logger.Info("stopping server gracefully")
+			logger.InfoContext(ctx, "stopping server gracefully")
 			_ = server.Shutdown(ctx)
 		case <-ctx.Done():
 		}
 	}()
 
-	logger.Info(fmt.Sprintf("server starting on port %d", cfg.ServerConfig.Port))
+	logger.InfoContext(ctx, fmt.Sprintf("server starting on port %d", cfg.ServerConfig.Port))
 	if err = server.ListenAndServe(); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("server stopped with error", "error", err)
+			logger.ErrorContext(ctx, "server stopped with error", "error", err)
 		}
 	}
 
-	logger.Info("server stopped")
+	logger.InfoContext(ctx, "server stopped")
 
 	return 0
 }

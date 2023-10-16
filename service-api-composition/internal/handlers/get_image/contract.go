@@ -4,6 +4,6 @@ import (
 	"context"
 )
 
-type imageStorageClient interface {
+type imageStorageClientInterface interface {
 	Get(ctx context.Context, id string) ([]byte, error)
 }
