@@ -1,0 +1,56 @@
+{
+  "vhosts": [
+    {
+      "name":"/"
+    }
+  ],
+  "users": [
+    {
+      "name":"rmuser",
+      "password_hash":"EhE4yORRc1ZcTgIvD+XfHsGhCZkYY3oeuzDpTCBYCkUvoJQC",
+      "hashing_algorithm":"rabbit_password_hashing_sha256",
+      "tags":"administrator"
+    }
+  ],
+  "permissions":[
+    {
+      "user":"rmuser",
+      "vhost":"/",
+      "configure":".*",
+      "write":".*",
+      "read":".*"
+    }
+  ],
+  "queues": [
+    {
+      "name": "scale_image_tasks",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "scale_image_tasks_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "scale_image_tasks_exchange",
+      "vhost": "/",
+      "destination": "scale_image_tasks",
+      "destination_type": "queue",
+      "routing_key": "scale_image_tasks",
+      "arguments": {}
+    }
+  ]
+}

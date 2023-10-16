@@ -22,7 +22,7 @@ const (
 
 const (
 	errorMessageWrongImageFormat = "Изображение должно быть в формате PNG"
-	errorMessageUnreadableBody   = "Тело запроса некорректно"
+	errorMessageUnreadableBody   = "Некорректный запрос"
 	errorMessageImageTooLarge    = "Изображение слишком большое"
 	errorMessageInternalError    = "Непредвиденная ошибка, попробуйте позже"
 )

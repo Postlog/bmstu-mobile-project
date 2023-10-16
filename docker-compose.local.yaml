@@ -2,7 +2,7 @@ version: "3.8"
 services:
   service-image-storage:
     container_name: service-image-storage
-    build: 
+    build:
       context: ./service-image-storage
       dockerfile: Dockerfile
     environment:
@@ -30,7 +30,7 @@ services:
         condition: service_healthy
       rabbit-mq:
         condition: service_healthy
-    build: 
+    build:
       context: ./service-api-composition
       dockerfile: Dockerfile
     ports:
@@ -39,7 +39,12 @@ services:
       - SERVER_PORT=8080
       - SERVICE_IMAGE_STORAGE_URL=http://service-image-storage:8080
       - SERVICE_IMAGE_STORAGE_TIMEOUT=1s
-      - RABBITMQ_DSN=amqp://rmuser:rmpassword@rabbit-mq:5672/
+      - RABBITMQ_DSN=amqp://rmuser:biba220@rabbit-mq:5672/
+      - POSTGRES_HOST=api-composition-postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB_NAME=api_composition
       - APP_ENV=local
     networks:
       - global
@@ -57,8 +62,9 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=api-composition
+      - POSTGRES_DB=api_composition
     volumes:
+      - ./service-api-composition/db/migration.sql:/docker-entrypoint-initdb.d/migration.sql
       - api-composition-postgres-volume:/var/lib/postgresql
     ports:
       - "2345:5432"
@@ -81,11 +87,9 @@ services:
     ports:
       - "15672:15672"
       - "5672:5672"
-    environment:
-      - RABBITMQ_DEFAULT_USER=rmuser
-      - RABBITMQ_DEFAULT_PASS=rmpassword
-      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit disk_free_limit 2147483648
     volumes:
+      - ./rabbit-mq/config.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbit-mq/definitions.json:/etc/rabbitmq/definitions.json:ro
       - rabbitmq-volume:/var/lib/rabbitmq
     networks:
       - global
@@ -99,7 +103,7 @@ services:
 
 
 networks:
-  global: 
+  global:
 
 volumes:
   image-storage-volume:

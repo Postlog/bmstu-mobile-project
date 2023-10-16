@@ -32,6 +32,21 @@ func New(folderPath string) (*Repository, error) {
 	}, nil
 }
 
+func (r Repository) Exist(_ context.Context, id uuid.UUID) (bool, error) {
+	fileName := fmt.Sprintf("%s.%s", id.String(), extensionPNG)
+	filePath := filepath.Join(r.folderPath, fileName)
+	_, err := os.Stat(filePath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("error getting stat for path \"%s\": %w", filePath, err)
+	}
+
+	return true, nil
+}
+
 func (r Repository) Count(_ context.Context) (int, error) {
 	files, err := os.ReadDir(r.folderPath)
 	if err != nil {
