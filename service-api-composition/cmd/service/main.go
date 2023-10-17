@@ -15,7 +15,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	imageStorageClient "github.com/postlog/mobile-project/service-api-composition/internal/clients/image_storage"
-	"github.com/postlog/mobile-project/service-api-composition/internal/config"
+	"github.com/postlog/mobile-project/service-api-composition/internal/config/service"
 	createScaleTaskHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/create_scale_task"
 	getImageHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/get_image"
 	getScaleResultHandler "github.com/postlog/mobile-project/service-api-composition/internal/handlers/get_scale_result"
@@ -44,7 +44,7 @@ func run() (exitCode int) {
 		}
 	}()
 
-	cfg, err := config.Load()
+	cfg, err := service.Load()
 	if err != nil {
 		logger.ErrorContext(ctx, "error loading config", "error", err)
 		return 1
@@ -52,12 +52,12 @@ func run() (exitCode int) {
 
 	logger.InfoContext(ctx, "app config", "config", cfg)
 
-	dependenciesHTTPClient := http.Client{
+	imageStorageHTTPClient := http.Client{
 		Transport: nil,
 		Timeout:   cfg.DependenciesConfig.ServiceImageStorageTimeout,
 	}
 
-	imageStorageClientInstance := imageStorageClient.New(cfg.DependenciesConfig.ServiceImageStorageURL, dependenciesHTTPClient)
+	imageStorageClientInstance := imageStorageClient.New(cfg.DependenciesConfig.ServiceImageStorageURL, imageStorageHTTPClient)
 	if err != nil {
 		logger.ErrorContext(ctx, "error initializing image-storage client", "error", err)
 		return 1
@@ -89,7 +89,7 @@ func run() (exitCode int) {
 	router := mux.NewRouter()
 	router.Handle("/info", infoHandlerInstance).Methods(http.MethodGet)
 	router.Handle("/image/{imageId}", getImageHandlerInstance).Methods(http.MethodGet)
-	router.Handle("/image", saveImageHandlerInstance).Methods(http.MethodPost).Headers("Content-Type", "image/png")
+	router.Handle("/image", saveImageHandlerInstance).Methods(http.MethodPost)
 	router.Handle("/task/scale/{taskId}", getScaleResultHandlerInstance).Methods(http.MethodGet)
 	router.Handle("/task/scale", createScaleTaskHandlerInstance).Methods(http.MethodPost)
 
@@ -122,7 +122,7 @@ func run() (exitCode int) {
 	return 0
 }
 
-func getPostgresDSN(postgresConfig config.PostgresConfig) string {
+func getPostgresDSN(postgresConfig service.PostgresConfig) string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		postgresConfig.Host,
 		postgresConfig.Port,

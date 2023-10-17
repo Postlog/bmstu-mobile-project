@@ -5,8 +5,8 @@ type getRequest struct {
 }
 
 type getResponse struct {
-	EncodedImage *string        `json:"encodedImage,omitempty"`
-	Error        *responseError `json:"error,omitempty"`
+	EncodedImage *string        `json:"encodedImage"`
+	Error        *responseError `json:"error"`
 }
 
 type saveRequest struct {
@@ -14,8 +14,8 @@ type saveRequest struct {
 }
 
 type saveResponse struct {
-	ImageID *string        `json:"imageId,omitempty"`
-	Error   *responseError `json:"error,omitempty"`
+	ImageID *string        `json:"imageId"`
+	Error   *responseError `json:"error"`
 }
 
 type responseError struct {

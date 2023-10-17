@@ -1,10 +1,13 @@
-package config
+package service
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/caarlos0/env/v9"
+	"github.com/joho/godotenv"
 )
 
 type Env string
@@ -45,6 +48,10 @@ type DependenciesConfig struct {
 }
 
 func Load() (Config, error) {
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return Config{}, fmt.Errorf("error loading .env file")
+	}
+
 	c := Config{}
 	err := env.Parse(&c)
 	if err != nil {

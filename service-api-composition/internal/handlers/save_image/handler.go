@@ -38,14 +38,14 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	bytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		_ = json.NewEncoder(w).Encode(handlers.SaveResponse{
+		_ = json.NewEncoder(w).Encode(handlers.SaveImageResponse{
 			Error: &handlers.ResponseError{
 				Code:    handlers.ErrorCodeBadRequest,
-				Message: handlers.ErrorMessageBodyMustBeJSON,
+				Message: handlers.ErrorMessageBadRequest,
 			},
 		})
 
-		h.logger.WarnContext(ctx, "handler save_image: error decoding body into JSON", "error", err)
+		h.logger.WarnContext(ctx, "handler save_image: error reading body", "error", err)
 
 		return
 	}
@@ -68,10 +68,9 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.logger.ErrorContext(ctx, "handler save_image: unexpected error from image-storage", "error", err)
 		}
 
-		w.WriteHeader(errorCode)
-
-		_ = json.NewEncoder(w).Encode(handlers.SaveResponse{
+		_ = json.NewEncoder(w).Encode(handlers.SaveImageResponse{
 			Error: &handlers.ResponseError{
+				Code:    errorCode,
 				Message: message,
 			},
 		})
@@ -79,7 +78,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(handlers.SaveResponse{
+	_ = json.NewEncoder(w).Encode(handlers.SaveImageResponse{
 		ImageID: &imageID,
 	})
 }

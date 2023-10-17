@@ -100,28 +100,31 @@ func (r Repository) Get(ctx context.Context, batchSize int, processCallback func
 		return fmt.Errorf("error consuming tasks: %w", err)
 	}
 
-	tasks := make([]ScaleTask, 0, batchSize)
+	tasksBuffer := make([]ScaleTask, 0, batchSize)
 	var lastDelivery amqp.Delivery
 	t := time.NewTimer(consumeChannelWaitDuration)
 	defer func() { _ = t.Stop() }()
 
 	for {
 		select {
+		case <-ctx.Done():
+			_ = lastDelivery.Nack(true, true)
+			return ctx.Err()
 		case delivery, isOpened := <-consumeCh:
 			if !isOpened {
-				if len(tasks) == 0 {
-					return nil
+				if len(tasksBuffer) != 0 {
+					processTasks(ctx, lastDelivery, tasksBuffer, processCallback)
 				}
 
-				return processTasks(ctx, lastDelivery, tasks, processCallback)
+				return nil
 			}
 
-			if len(tasks) >= batchSize {
-				if err = processTasks(ctx, lastDelivery, tasks, processCallback); err != nil {
-					return err
-				}
+			if len(tasksBuffer) >= batchSize {
+				processTasks(ctx, lastDelivery, tasksBuffer, processCallback)
 
-				tasks = tasks[:0]
+				tasksBuffer = tasksBuffer[:0]
+
+				break
 			}
 
 			var scaleTask ScaleTask
@@ -130,21 +133,19 @@ func (r Repository) Get(ctx context.Context, batchSize int, processCallback func
 				return fmt.Errorf("error unmarshalling task: %w", err)
 			}
 
-			tasks = append(tasks, scaleTask)
+			tasksBuffer = append(tasksBuffer, scaleTask)
 			lastDelivery = delivery
 		case <-t.C:
-			if len(tasks) == 0 {
+			if len(tasksBuffer) == 0 {
 				break
 			}
 
-			if err = processTasks(ctx, lastDelivery, tasks, processCallback); err != nil {
-				return err
-			}
+			processTasks(ctx, lastDelivery, tasksBuffer, processCallback)
 
-			tasks = tasks[:0]
-
-			t.Reset(consumeChannelWaitDuration)
+			tasksBuffer = tasksBuffer[:0]
 		}
+
+		t.Reset(consumeChannelWaitDuration)
 	}
 }
 
@@ -153,19 +154,12 @@ func processTasks(
 	lastDelivery amqp.Delivery,
 	tasks []ScaleTask,
 	processCallback func(context.Context, []ScaleTask) error,
-) error {
+) {
 	err := processCallback(ctx, tasks)
-	if err != nil {
-		nackErr := lastDelivery.Nack(true, true)
-		if nackErr != nil {
-			return fmt.Errorf("error nacking: %w", nackErr)
-		}
-	} else {
-		ackErr := lastDelivery.Ack(true)
-		if ackErr != nil {
-			return fmt.Errorf("error acking: %w", ackErr)
-		}
-	}
 
-	return nil
+	if err != nil {
+		_ = lastDelivery.Nack(true, true)
+	} else {
+		_ = lastDelivery.Ack(true)
+	}
 }

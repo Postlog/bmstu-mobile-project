@@ -18,7 +18,6 @@ type Handler struct {
 
 const (
 	errorMessageResultNotFound = "Результат не найден"
-	errorMessageInternalError  = "Непредвиденная ошибка, попробуйте позже"
 
 	muxVarTaskID = "taskId"
 )
@@ -51,7 +50,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				},
 			})
 
-			h.logger.WarnContext(ctx, "handler get_scale_result: scale result not found", "taskId", taskID, "error", err)
+			h.logger.WarnContext(ctx, "handler get_scale_result: scale result not found", "taskId", taskID)
 
 			return
 		}
@@ -70,11 +69,11 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	_ = json.NewEncoder(w).Encode(handlers.GetScaleResultResponse{
 		Result: &handlers.GetScaleResultResponseResult{
-			TaskID:        taskID,
-			OriginImageID: scaleResult.OriginImageID,
-			ScaleFactor:   scaleResult.ScaleFactor,
-			ImageID:       scaleResult.ImageID,
-			ScaleError:    scaleResult.ErrorText,
+			TaskID:          taskID,
+			OriginalImageID: scaleResult.OriginalImageID,
+			ScaleFactor:     scaleResult.ScaleFactor,
+			ImageID:         scaleResult.ImageID,
+			ScaleError:      scaleResult.ErrorText,
 		},
 	})
 }

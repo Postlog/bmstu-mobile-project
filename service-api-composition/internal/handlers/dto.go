@@ -1,16 +1,16 @@
 package handlers
 
 type GetScaleResultResponse struct {
-	Result *GetScaleResultResponseResult `json:"result"`
-	Error  *ResponseError                `json:"error"`
+	Result *GetScaleResultResponseResult `json:"result,omitempty"`
+	Error  *ResponseError                `json:"error,omitempty"`
 }
 
 type GetScaleResultResponseResult struct {
-	TaskID        string  `json:"taskId"`
-	OriginImageID string  `json:"originImageId"`
-	ScaleFactor   int     `json:"scaleFactor"`
-	ImageID       *string `json:"imageId"`
-	ScaleError    *string `json:"scaleError"`
+	TaskID          string  `json:"taskId"`
+	OriginalImageID string  `json:"originalImageId"`
+	ScaleFactor     int     `json:"scaleFactor"`
+	ImageID         *string `json:"imageId,omitempty"`
+	ScaleError      *string `json:"scaleError,omitempty"`
 }
 
 type CreateScaleTaskRequest struct {
@@ -19,13 +19,13 @@ type CreateScaleTaskRequest struct {
 }
 
 type CreateScaleTaskResponse struct {
-	TaskID *string        `json:"taskId"`
-	Error  *ResponseError `json:"error"`
+	TaskID *string        `json:"taskId,omitempty"`
+	Error  *ResponseError `json:"error,omitempty"`
 }
 
-type SaveResponse struct {
-	ImageID *string        `json:"imageId"`
-	Error   *ResponseError `json:"error"`
+type SaveImageResponse struct {
+	ImageID *string        `json:"imageId,omitempty"`
+	Error   *ResponseError `json:"error,omitempty"`
 }
 
 type InfoResponse struct {

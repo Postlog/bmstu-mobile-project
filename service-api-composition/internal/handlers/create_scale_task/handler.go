@@ -36,7 +36,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req handlers.CreateScaleTaskRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		_ = json.NewEncoder(w).Encode(handlers.SaveResponse{
+		_ = json.NewEncoder(w).Encode(handlers.SaveImageResponse{
 			Error: &handlers.ResponseError{
 				Code:    handlers.ErrorCodeBadRequest,
 				Message: handlers.ErrorMessageBodyMustBeJSON,
@@ -49,7 +49,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.ScaleFactor <= 0 {
-		_ = json.NewEncoder(w).Encode(handlers.SaveResponse{
+		_ = json.NewEncoder(w).Encode(handlers.SaveImageResponse{
 			Error: &handlers.ResponseError{
 				Code:    handlers.ErrorCodeBadRequest,
 				Message: errorMessageScaleFactorDoesntFitInRange,
@@ -70,7 +70,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	if err != nil {
-		_ = json.NewEncoder(w).Encode(handlers.SaveResponse{
+		_ = json.NewEncoder(w).Encode(handlers.SaveImageResponse{
 			Error: &handlers.ResponseError{
 				Code:    handlers.ErrorCodeInternalError,
 				Message: handlers.ErrorMessageInternal,

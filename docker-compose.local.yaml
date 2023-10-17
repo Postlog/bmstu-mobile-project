@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.9"
 services:
   service-image-storage:
     container_name: service-image-storage
@@ -33,6 +33,8 @@ services:
     build:
       context: ./service-api-composition
       dockerfile: Dockerfile
+    command:
+      - "./bin/service"
     ports:
       - "80:8080"
     environment:
@@ -55,6 +57,30 @@ services:
       retries: 2
       start_period: 10s
       timeout: 2s
+
+  service-api-composition-image-scaler-worker:
+    container_name: service-api-composition-image-scaler-worker
+    depends_on:
+      api-composition-postgres:
+        condition: service_healthy
+      rabbit-mq:
+        condition: service_healthy
+    build:
+      context: ./service-api-composition
+      dockerfile: Dockerfile
+    command:
+      - "./bin/workers/image_scaler"
+    environment:
+      - RABBITMQ_DSN=amqp://rmuser:biba220@rabbit-mq:5672/
+      - POSTGRES_HOST=api-composition-postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB_NAME=api_composition
+      - APP_ENV=local
+    networks:
+      - global
+    restart: unless-stopped
 
   api-composition-postgres:
     container_name: api-composition-postgres

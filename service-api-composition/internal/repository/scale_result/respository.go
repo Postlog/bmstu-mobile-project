@@ -24,7 +24,7 @@ func (r Repository) Get(ctx context.Context, taskID string) (ScaleResult, error)
 	result := ScaleResult{TaskID: taskID}
 
 	var imageID, errorText sql.NullString
-	if err := row.Scan(&result.OriginImageID, &result.ScaleFactor, &imageID, &errorText); err != nil {
+	if err := row.Scan(&result.OriginalImageID, &result.ScaleFactor, &imageID, &errorText); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ScaleResult{}, ErrResultNotFound
 		}
@@ -43,15 +43,15 @@ func (r Repository) Get(ctx context.Context, taskID string) (ScaleResult, error)
 	return result, nil
 }
 
-func (r Repository) Save(ctx context.Context, reqs []ScaleResult) error {
-	if len(reqs) == 0 {
+func (r Repository) Save(ctx context.Context, results []ScaleResult) error {
+	if len(results) == 0 {
 		return nil
 	}
 
-	args := make([]interface{}, 0, len(reqs)*3)
-	values := make([]string, 0, len(reqs))
-	for i, req := range reqs {
-		args = append(args, req.TaskID, req.OriginImageID, req.ScaleFactor, req.ImageID, req.ErrorText)
+	args := make([]interface{}, 0, len(results)*3)
+	values := make([]string, 0, len(results))
+	for i, req := range results {
+		args = append(args, req.TaskID, req.OriginalImageID, req.ScaleFactor, req.ImageID, req.ErrorText)
 		values = append(values,
 			fmt.Sprintf(
 				"($%d, $%d, $%d, $%d, $%d)",

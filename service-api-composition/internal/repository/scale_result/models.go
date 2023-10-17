@@ -1,9 +1,9 @@
 package scale_result
 
 type ScaleResult struct {
-	TaskID        string
-	OriginImageID string
-	ScaleFactor   int
-	ImageID       *string
-	ErrorText     *string
+	TaskID          string
+	OriginalImageID string
+	ScaleFactor     int
+	ImageID         *string
+	ErrorText       *string
 }
