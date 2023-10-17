@@ -37,7 +37,6 @@ class ModelWrapper(torch.nn.Module):
     # @torch.cuda.amp.autocast()
     def forward(self, lr_image, batch_size=1, patches_size=192,
                 padding=24, pad_size=15):
-        print('зашли в forward')
         scale = self.scale
         device = self.device
 
@@ -51,13 +50,11 @@ class ModelWrapper(torch.nn.Module):
         patches = torch.tensor(patches, dtype=torch.float32)
         img = (patches / 255).permute((0, 3, 1, 2)).to(device)
 
-        print('где-то внутри forward')
         with torch.no_grad():
             res = self.model(img[0:batch_size])
             for i in range(batch_size, img.shape[0], batch_size):
                 res = torch.cat((res, self.model(img[i:i + batch_size])), 0)
 
-        print('почти закончили с forward')
         sr_image = res.permute((0, 2, 3, 1)).detach().clamp_(0, 1).cpu()
         np_sr_image = sr_image.numpy()
 
@@ -72,10 +69,3 @@ class ModelWrapper(torch.nn.Module):
         sr_img = Image.fromarray(sr_img)
 
         return sr_img
-
-# if __name__ == '__main__':
-#     print(pathlib.Path(__file__).parent.resolve())
-#     print(pathlib.Path().resolve())
-#     # os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'templates'))
-#     a = torch.load(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'weights/RealESRGAN_x2.pth')))
-#     print(a)
