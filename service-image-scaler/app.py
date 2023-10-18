@@ -2,13 +2,13 @@ import platform
 
 from flask import Flask, request, jsonify
 
-from errors import ResponseError
+from errors import ResponseError, NotFound
 from model_client import ModelClient
 
 
 app = Flask(__name__)
 
-HOST = 'localhost'
+HOST = 'http://localhost:8081'
 
 model_client = ModelClient(host=HOST)
 
@@ -39,26 +39,46 @@ def scale():
 
     try:
         image = model_client.get_image(image_id=image_id)
-    except ResponseError as e:
-        print(f'ошибка: {e}')
+
+    except NotFound as e:
+        print(f'Ошибка при получении изображения: {e}')
         response = {
-            'scaledImageId': None,
             'error': {
-                'code': 'блять а как сюда код передать..',
-                'message': 'ошибка при получении изображения'
+                'code': 400,
+                'message': 'Изображение не найдено'
             }
         }
         return jsonify(response), 200
 
+    except ResponseError as e:
+        print(f'Ошибка при получении изображения: {e}')
+        response = {
+            'error': {
+                'code': 500,
+                'message': 'Неожиданная ошибка'
+            }
+        }
+        return jsonify(response), 200
+
+
     try:
         scaled_image = model_client.scale_image(image=image, scale_factor=scale_factor)
-    except ResponseError as e:
-        print(f'ошибка: {e}')
+    except ValueError as e:
+        print(f'Ошибка при скейлинге: {e}')
         response = {
-            'scaledImageId': None,
             'error': {
-                'code': 'блять а как сюда код передать..',
-                'message': 'ошибка при обработке изображения моделью'
+                'code': 400,
+                'message': f'Неверно выбран коэффициент масштабирования. Возможные коэффициенты: {list(model_client.model_collection.keys())}'
+            }
+        }
+        return jsonify(response), 200
+
+    except Exception as e:
+        print(f'Ошибка при скейлинге: {e}')
+        response = {
+            'error': {
+                'code': 500,
+                'message': f'Ошибка при скейлинге изображения'
             }
         }
         return jsonify(response), 200
@@ -66,12 +86,11 @@ def scale():
     try:
         scaled_image_id = model_client.save_image(image=scaled_image)
     except ResponseError as e:
-        print(f'ошибка: {e}')
+        print(f'Ошибка при сохранении изображения: {e}')
         response = {
-            'scaledImageId': None,
             'error': {
-                'code': 'блять а как сюда код передать..',
-                'message': 'ошибка при сохранении изображения'
+                'code': 500,
+                'message': 'Ошибка при сохранении изображения'
             }
         }
         return jsonify(response), 200

@@ -133,12 +133,6 @@ def stich_together(patches, padded_image_shape, target_shape, padding_size=4):
 
 MODELS_CONFIG = {
     2: 'weights/RealESRGAN_x2.pth',
-    4: dict(
-        repo_id='sberbank-ai/Real-ESRGAN',
-        filename='RealESRGAN_x4.pth',
-    ),
-    8: dict(
-        repo_id='sberbank-ai/Real-ESRGAN',
-        filename='RealESRGAN_x8.pth',
-    ),
+    4: 'weights/RealESRGAN_x4.pth',
+    8: 'weights/RealESRGAN_x8.pth'
 }

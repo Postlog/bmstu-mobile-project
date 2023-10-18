@@ -4,7 +4,7 @@ import requests as r
 from io import BytesIO
 from PIL import Image
 
-from errors import ResponseError
+from errors import ResponseError, NotFound
 from esrgan import ModelWrapper
 
 
@@ -30,6 +30,10 @@ class ModelClient:
 
         if body.get('error') is not None:
             error = body['error']
+
+            if error['code'] == 404:
+                raise NotFound(f'code: {error["code"]}, message: {error["message"]}')
+
             raise ResponseError(f'code: {error["code"]}, message: {error["message"]}')
 
         image = Image.open(BytesIO(base64.b64decode(body['encodedImage']))).convert('RGB')
@@ -37,7 +41,7 @@ class ModelClient:
         return image
 
     def scale_image(self, image: Image, scale_factor: int) -> Image:
-        if scale_factor not in [2, 4, 8]:
+        if scale_factor not in self.model_collection:
             raise ValueError(f'Invalid scale factor: {scale_factor}')
 
         scaled_image = self.model_collection[scale_factor](image)
@@ -52,7 +56,7 @@ class ModelClient:
         response = r.post(
             url=self.host + '/save',
             json={
-                "encodedImage": encoded_image
+                "encodedImage": encoded_image.decode()
             }
         )
 
@@ -62,4 +66,4 @@ class ModelClient:
             error = body['error']
             raise ResponseError(f'code: {error["code"]}, message: {error["message"]}')
 
-        return body['scaledImageId']
+        return body['imageId']
