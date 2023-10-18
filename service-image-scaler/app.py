@@ -5,7 +5,6 @@ from flask import Flask, request, jsonify
 from errors import ResponseError, NotFound
 from model_client import ModelClient
 
-
 app = Flask(__name__)
 
 HOST = 'http://localhost:8081'
@@ -23,15 +22,6 @@ def info():
 
 @app.route('/scale', methods=['POST'])
 def scale():
-    # получить imageId и scale_factor из запроса
-    # сходить в image storage по imageId
-    # декодировать полученное изображение
-    # scale image
-    # закодировать
-    # положить в image storage
-    # получаем id нового изображения
-    # записываем id в ответ ручки
-
     request_data = request.get_json()
 
     image_id = request_data['imageId']
@@ -59,7 +49,6 @@ def scale():
             }
         }
         return jsonify(response), 200
-
 
     try:
         scaled_image = model_client.scale_image(image=image, scale_factor=scale_factor)

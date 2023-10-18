@@ -79,7 +79,7 @@ target/
 *.ipynb
 
 # Model weights
-weights/
+#weights/
 
 # Images
 *.png
