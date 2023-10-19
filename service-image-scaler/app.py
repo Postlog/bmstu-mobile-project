@@ -1,3 +1,4 @@
+import time
 import dataclasses
 import os
 import platform
@@ -58,7 +59,9 @@ def scale():
         return jsonify(response), 200
 
     try:
+        start = time.time()
         scaled_image = client.scale_image(image=image, scale_factor=scale_factor)
+        finish = time.time() - start
     except ValueError as e:
         print(f'Ошибка при скейлинге: {e}')
         response = {
@@ -90,7 +93,12 @@ def scale():
         }
         return jsonify(response), 200
 
-    response = {'scaledImageId': scaled_image_id}
+    response = {
+        'result': {
+            'scaledImageId': scaled_image_id,
+            'scalingTime': int(finish)
+        }
+    }
 
     return jsonify(response), 200
 
