@@ -2,7 +2,9 @@ package image_scaler
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	imageScalerClient "github.com/postlog/mobile-project/service-api-composition/internal/clients/image_scaler"
 	"log/slog"
 
 	"golang.org/x/sync/errgroup"
@@ -52,19 +54,26 @@ func (s Service) processScaleTasks(ctx context.Context, tasks []scaleTaskReposit
 		t := task
 		idx := i
 		eg.Go(func() error {
+			scaleResults[idx] = scaleResultRepository.ScaleResult{
+				TaskID:          t.ID,
+				OriginalImageID: t.ImageID,
+				ScaleFactor:     t.ScaleFactor,
+			}
 			scaledImageID, err := s.imageScalerClient.ScaleImage(egCtx, t.ImageID, t.ScaleFactor)
 			if err != nil {
+				if errors.Is(err, imageScalerClient.ErrBadRequestValues) {
+					tmp := "Некорректные значения для увеличения изображения"
+					scaleResults[idx].ErrorText = &tmp
+
+					return nil
+				}
+
 				s.logger.ErrorContext(ctx, "error scaling image", "task", t, "error", err)
 
 				return fmt.Errorf("image-scaler ScaleImage: %w", err)
 			}
 
-			scaleResults[idx] = scaleResultRepository.ScaleResult{
-				TaskID:          t.ID,
-				OriginalImageID: t.ImageID,
-				ScaleFactor:     t.ScaleFactor,
-				ImageID:         &scaledImageID,
-			}
+			scaleResults[idx].ImageID = &scaledImageID
 
 			return nil
 		})

@@ -5,24 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
-	"time"
-
-	"github.com/google/uuid"
 )
 
 func (c Client) ScaleImage(ctx context.Context, imageID string, scaleFactor int) (string, error) {
-	time.Sleep(time.Second*3 + time.Second*time.Duration(rand.Intn(4)))
-
-	if rand.Intn(100) > 70 {
-		return "", fmt.Errorf("test error")
-	}
-
-	return uuid.New().String(), nil
-}
-
-func (c Client) scaleImageReal(ctx context.Context, imageID string, scaleFactor int) (string, error) {
 	encodedBody, err := json.Marshal(scaleImageRequest{
 		ImageID:     imageID,
 		ScaleFactor: scaleFactor,
@@ -30,10 +16,12 @@ func (c Client) scaleImageReal(ctx context.Context, imageID string, scaleFactor 
 	if err != nil {
 		return "", fmt.Errorf("error encoding request: %w", err)
 	}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", c.baseURL, "scaleImage"), bytes.NewReader(encodedBody))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", c.baseURL, "scale"), bytes.NewReader(encodedBody))
 	if err != nil {
 		return "", fmt.Errorf("error building request: %w", err)
 	}
+
+	req.Header.Set("Content-Type", "application/json")
 
 	response, err := c.httpClient.Do(req.WithContext(ctx))
 	if err != nil {
@@ -53,6 +41,8 @@ func (c Client) scaleImageReal(ctx context.Context, imageID string, scaleFactor 
 
 	if resp.Error != nil {
 		switch resp.Error.Code {
+		case errorCodeBadRequest:
+			return "", ErrBadRequestValues
 		}
 
 		return "", fmt.Errorf("unexpected error %d: %s", resp.Error.Code, resp.Error.Message)

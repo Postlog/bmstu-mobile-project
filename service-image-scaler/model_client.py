@@ -1,7 +1,7 @@
 import base64
-import requests as r
-
 from io import BytesIO
+
+import requests as r
 from PIL import Image
 
 from errors import ResponseError, NotFound
@@ -9,8 +9,8 @@ from esrgan import ModelWrapper
 
 
 class ModelClient:
-    def __init__(self, host):
-        self.host = host
+    def __init__(self, image_storage_host: str):
+        self.host = image_storage_host
 
         self.model_collection = {
             2: ModelWrapper(device='cpu', scale=2),

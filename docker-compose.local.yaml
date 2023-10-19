@@ -77,9 +77,13 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB_NAME=api_composition
+      - SERVICE_IMAGE_SCALER_URL=http://host.docker.internal:8082
+      - SERVICE_IMAGE_SCALER_TIMEOUT=0
       - APP_ENV=local
     networks:
       - global
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   api-composition-postgres:
@@ -126,6 +130,28 @@ services:
       timeout: 30s
       start_period: 30s
       retries: 3
+
+#  service-image-scaler:
+#    container_name: service-image-scaler
+#    build:
+#      context: ./service-image-scaler
+#      dockerfile: Dockerfile
+#    command: python app.py
+#    environment:
+#      - SERVER_PORT=8080
+#      - SERVICE_IMAGE_STORAGE_URL=http://service-image-storage:8080
+#      - APP_ENV=local
+#    ports:
+#      - "8082:8080"
+#    networks:
+#      - global
+#    restart: unless-stopped
+#    healthcheck:
+#      test: curl http://127.0.0.1:8080/info
+#      interval: 5s
+#      retries: 2
+#      start_period: 10s
+#      timeout: 2s
 
 
 networks:

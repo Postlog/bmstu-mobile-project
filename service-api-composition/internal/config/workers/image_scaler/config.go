@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/caarlos0/env/v9"
 	"github.com/joho/godotenv"
@@ -41,6 +42,8 @@ type PostgresConfig struct {
 }
 
 type DependenciesConfig struct {
+	ServiceImageScalerURL    string        `env:"SERVICE_IMAGE_SCALER_URL,required"`
+	ServiceImageScalerTimout time.Duration `env:"SERVICE_IMAGE_SCALER_TIMEOUT,required"`
 }
 
 func Load() (Config, error) {

@@ -49,10 +49,10 @@ func run() (exitCode int) {
 
 	imageScalerHTTPClient := http.Client{
 		Transport: nil,
-		Timeout:   0,
+		Timeout:   cfg.DependenciesConfig.ServiceImageScalerTimout,
 	}
 
-	imageScalerClientInstance := imageScalerClient.New("", imageScalerHTTPClient)
+	imageScalerClientInstance := imageScalerClient.New(cfg.DependenciesConfig.ServiceImageScalerURL, imageScalerHTTPClient)
 	if err != nil {
 		logger.ErrorContext(ctx, "error initializing image-sclaer client", "error", err)
 		return 1

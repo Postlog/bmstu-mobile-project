@@ -38,7 +38,7 @@ class ScaleResult {
 class APICompositionClient {
   final String host;
 
-  APICompositionClient(this.host);
+  APICompositionClient({required this.host});
 
   var logger = Logger(
       printer: PrettyPrinter(
@@ -101,12 +101,18 @@ class APICompositionClient {
 
     if (body.containsKey('error')) {
       var error = body['error'] as Map<String, dynamic>;
+
+      if (error['code'] as int == 404) {
+        throw const NotFound('Результат не найден');
+      }
+
       throw ResponseError(error['message'] as String);
     }
 
+    final result = body['result'] as Map<String, dynamic>;
     var scaleResult = ScaleResult(
-        body['taskId'], body['originalImageId'], body['scaleFactor'],
-        body['imageId'], body['scaleError']);
+        result['taskId'], result['originalImageId'], result['scaleFactor'],
+        result['imageId'], result['scaleError']);
 
     return scaleResult;
   }
