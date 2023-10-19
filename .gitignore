@@ -76,7 +76,16 @@ docs/_build/
 target/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+*.ipynb
+
+# Model weights
+#weights/
+
+# Images
+*.png
+
+# WTF
+*.DS_Store
 
 # IPython
 profile_default/
