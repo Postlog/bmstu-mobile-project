@@ -59,7 +59,7 @@ func (s Service) processScaleTasks(ctx context.Context, tasks []scaleTaskReposit
 				OriginalImageID: t.ImageID,
 				ScaleFactor:     t.ScaleFactor,
 			}
-			scaledImageID, err := s.imageScalerClient.ScaleImage(egCtx, t.ImageID, t.ScaleFactor)
+			scalingResult, err := s.imageScalerClient.ScaleImage(egCtx, t.ImageID, t.ScaleFactor)
 			if err != nil {
 				if errors.Is(err, imageScalerClient.ErrBadRequestValues) {
 					tmp := "Некорректные значения для увеличения изображения"
@@ -73,7 +73,8 @@ func (s Service) processScaleTasks(ctx context.Context, tasks []scaleTaskReposit
 				return fmt.Errorf("image-scaler ScaleImage: %w", err)
 			}
 
-			scaleResults[idx].ImageID = &scaledImageID
+			scaleResults[idx].ImageID = &scalingResult.ScaledImageID
+			scaleResults[idx].ScalingTime = &scalingResult.ScalingTime
 
 			return nil
 		})

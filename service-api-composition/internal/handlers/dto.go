@@ -10,6 +10,7 @@ type GetScaleResultResponseResult struct {
 	OriginalImageID string  `json:"originalImageId"`
 	ScaleFactor     int     `json:"scaleFactor"`
 	ImageID         *string `json:"imageId,omitempty"`
+	ScalingTime     *int    `json:"scalingResult,omitempty"`
 	ScaleError      *string `json:"scaleError,omitempty"`
 }
 

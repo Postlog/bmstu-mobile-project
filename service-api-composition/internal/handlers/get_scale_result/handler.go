@@ -73,6 +73,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			OriginalImageID: scaleResult.OriginalImageID,
 			ScaleFactor:     scaleResult.ScaleFactor,
 			ImageID:         scaleResult.ImageID,
+			ScalingTime:     scaleResult.ScalingTime,
 			ScaleError:      scaleResult.ErrorText,
 		},
 	})

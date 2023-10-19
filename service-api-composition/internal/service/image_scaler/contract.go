@@ -3,6 +3,7 @@ package image_scaler
 import (
 	"context"
 
+	imageScalerClient "github.com/postlog/mobile-project/service-api-composition/internal/clients/image_scaler"
 	scaleResultRepository "github.com/postlog/mobile-project/service-api-composition/internal/repository/scale_result"
 	scaleTaskRepository "github.com/postlog/mobile-project/service-api-composition/internal/repository/scale_task"
 )
@@ -16,5 +17,5 @@ type scaleTaskRepositoryInterface interface {
 }
 
 type imageScalerClientInterface interface {
-	ScaleImage(ctx context.Context, imageID string, scaleFactor int) (string, error)
+	ScaleImage(ctx context.Context, imageID string, scaleFactor int) (imageScalerClient.ScalingResult, error)
 }

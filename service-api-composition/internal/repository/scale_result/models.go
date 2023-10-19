@@ -5,5 +5,6 @@ type ScaleResult struct {
 	OriginalImageID string
 	ScaleFactor     int
 	ImageID         *string
+	ScalingTime     *int
 	ErrorText       *string
 }

@@ -51,16 +51,16 @@ func (r Repository) Save(ctx context.Context, results []ScaleResult) error {
 	args := make([]interface{}, 0, len(results)*3)
 	values := make([]string, 0, len(results))
 	for i, req := range results {
-		args = append(args, req.TaskID, req.OriginalImageID, req.ScaleFactor, req.ImageID, req.ErrorText)
+		args = append(args, req.TaskID, req.OriginalImageID, req.ScaleFactor, req.ImageID, req.ScalingTime, req.ErrorText)
 		values = append(values,
 			fmt.Sprintf(
-				"($%d, $%d, $%d, $%d, $%d)",
-				i*5+1, i*5+2, i*5+3, i*5+4, i*5+5,
+				"($%d, $%d, $%d, $%d, $%d, $%d)",
+				i*5+1, i*5+2, i*5+3, i*5+4, i*5+5, i*5+6,
 			),
 		)
 	}
 
-	query := `insert into scale_result (task_id, origin_image_id, scale_factor, image_id, error) values ` + strings.Join(values, ",")
+	query := `insert into scale_result (task_id, origin_image_id, scale_factor, image_id, scaling_time, error) values ` + strings.Join(values, ",")
 
 	_, err := r.db.ExecContext(ctx, query, args...)
 	if err != nil {

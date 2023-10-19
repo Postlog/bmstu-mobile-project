@@ -6,11 +6,25 @@ type scaleImageRequest struct {
 }
 
 type scaleImageResponse struct {
-	ScaledImageID *string        `json:"scaledImageId"`
-	Error         *responseError `json:"error"`
+	Result *scaleImageResponseScalingResult `json:"result"`
+	Error  *responseError                   `json:"error"`
+}
+
+type scaleImageResponseScalingResult struct {
+	ScaledImageID string `json:"scaledImageId"`
+	ScalingTime   int    `json:"scalingTime"`
 }
 
 type responseError struct {
 	Code    int64  `json:"code"`
 	Message string `json:"message"`
 }
+
+/*
+{
+	"result": {
+		"scaledImageId": "",
+		"scalingTime": ""
+	}
+}
+*/
