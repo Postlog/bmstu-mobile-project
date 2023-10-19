@@ -112,6 +112,7 @@ def parse_config() -> Config:
         Env=os.getenv('APP_ENV')
     )
 
+
 if __name__ == '__main__':
     c = parse_config()
 
